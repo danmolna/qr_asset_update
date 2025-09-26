@@ -627,7 +627,7 @@
 
         // Manuális kód hozzáadása
         function addManualCode() {
-            const code = manualInput.value.trim().toUpperCase();
+            const code = manualInput.value.trim().toUpperCase().replace(/Ö/g, '0');
             if (!code) {
                 showStatus(scanStatus, 'Kérlek írj be egy ACSG ID-t!', 'error');
                 manualInput.focus(); // Fókusz visszaadása
