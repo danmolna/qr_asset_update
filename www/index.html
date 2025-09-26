@@ -268,9 +268,168 @@
                 align-items: center;
             }
         }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            text-align: center;
+            position: relative;
+        }
+
+        .modal-content h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .modal-content p {
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #3498db;
+            border-radius: 25px;
+            font-size: 1.1em;
+            margin-bottom: 25px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: #2980b9;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
+        }
+
+        .modal-btn {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            min-width: 150px;
+        }
+
+        .modal-btn:hover {
+            background: linear-gradient(45deg, #229954, #27ae60);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .modal-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Toggle Switch Styles */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 5px 0;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e74c3c;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #27ae60;
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .toggle-label {
+            font-size: 0.9em;
+            font-weight: bold;
+            min-width: 60px;
+        }
+
+        .toggle-label.active {
+            color: #27ae60;
+        }
+
+        .toggle-label.inactive {
+            color: #e74c3c;
+        }
     </style>
 </head>
 <body>
+    <!-- Névkód bekérése modal -->
+    <div id="nameCodeModal" class="modal">
+        <div class="modal-content">
+            <h2>👤 Névkód megadása</h2>
+            <p>A szkennelés elkezdése előtt kérlek add meg a névkódod. Ez minden beszkennelt elemhez hozzáadásra kerül.</p>
+            <input type="text" id="nameCodeInput" class="modal-input" placeholder="Írd be a névkódod (pl: DJ01)" maxlength="10" autocomplete="off">
+            <br>
+            <button id="confirmNameCode" class="modal-btn" disabled>✅ Folytatás</button>
+        </div>
+    </div>
+
     <div class="container">
         <div id="globalStatus" class="status" style="display: none; margin: 20px; border-radius: 10px;"></div>
         <div class="header">
@@ -371,6 +530,7 @@
         let scannedItems = [];
         let qrScanner = null;
         let isScanning = false;
+        let userNameCode = '';
 
         // DOM elemek
         const fileInput = document.getElementById('fileInput');
@@ -386,6 +546,11 @@
         const scannedList = document.getElementById('scannedList');
         const downloadExcelBtn = document.getElementById('downloadExcel');
         const clearScannedBtn = document.getElementById('clearScanned');
+
+        // Modal elemek
+        const nameCodeModal = document.getElementById('nameCodeModal');
+        const nameCodeInput = document.getElementById('nameCodeInput');
+        const confirmNameCodeBtn = document.getElementById('confirmNameCode');
 
         // Státusz elemek
         const globalStatus = document.getElementById('globalStatus');
@@ -406,6 +571,36 @@
         qrImageInput.addEventListener('change', handleImageUpload);
         downloadExcelBtn.addEventListener('click', downloadExcel);
         clearScannedBtn.addEventListener('click', clearScanned);
+
+        // Modal event listener-ek
+        nameCodeInput.addEventListener('input', validateNameCode);
+        nameCodeInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !confirmNameCodeBtn.disabled) {
+                confirmNameCode();
+            }
+        });
+        confirmNameCodeBtn.addEventListener('click', confirmNameCode);
+
+        // Névkód modal kezelő függvények
+        function validateNameCode() {
+            const code = nameCodeInput.value.trim().toUpperCase();
+            confirmNameCodeBtn.disabled = code.length < 2;
+            nameCodeInput.value = code;
+        }
+
+        function confirmNameCode() {
+            const code = nameCodeInput.value.trim().toUpperCase();
+            if (code.length >= 2) {
+                userNameCode = code;
+                nameCodeModal.style.display = 'none';
+                showGlobalInfo(`📝 Névkód beállítva: ${userNameCode}`);
+            }
+        }
+
+        function showNameCodeModal() {
+            nameCodeModal.style.display = 'block';
+            nameCodeInput.focus();
+        }
 
         function handleFileLoad(event) {
             const file = event.target.files[0];
@@ -429,13 +624,21 @@
                         header && (header.toString().toLowerCase().includes('scanned at') || 
                                   header.toString().toLowerCase().includes('scanned_at'))
                     );
-                    const hasSourceColumn = headers.some(header => 
+                    const hasSourceColumn = headers.some(header =>
                         header && header.toString().toLowerCase().includes('source')
+                    );
+                    const hasNameCodeColumn = headers.some(header =>
+                        header && header.toString().toLowerCase().includes('name code')
+                    );
+                    const hasActiveColumn = headers.some(header =>
+                        header && header.toString().toLowerCase().includes('active')
                     );
 
                     let scannedColumnIndex = -1;
                     let scannedAtColumnIndex = -1;
                     let sourceColumnIndex = -1;
+                    let nameCodeColumnIndex = -1;
+                    let activeColumnIndex = -1;
 
                     if (hasScannedColumn) {
                         scannedColumnIndex = headers.findIndex(header => 
@@ -452,8 +655,20 @@
                     }
 
                     if (hasSourceColumn) {
-                        sourceColumnIndex = headers.findIndex(header => 
+                        sourceColumnIndex = headers.findIndex(header =>
                             header && header.toString().toLowerCase().includes('source')
+                        );
+                    }
+
+                    if (hasNameCodeColumn) {
+                        nameCodeColumnIndex = headers.findIndex(header =>
+                            header && header.toString().toLowerCase().includes('name code')
+                        );
+                    }
+
+                    if (hasActiveColumn) {
+                        activeColumnIndex = headers.findIndex(header =>
+                            header && header.toString().toLowerCase().includes('active')
                         );
                     }
 
@@ -472,7 +687,9 @@
                             acsgId: row[3] || '',
                             scanned: false,
                             scannedAt: null,
-                            source: null
+                            source: null,
+                            nameCode: null,
+                            active: true // Default to active
                         };
 
                         // Ha van Scanned oszlop, akkor visszaállítjuk az állapotot
@@ -494,9 +711,20 @@
                                     item.source = 'Korábban rögzítve';
                                 }
 
+                                // Name Code visszaállítása
+                                if (nameCodeColumnIndex !== -1 && row[nameCodeColumnIndex]) {
+                                    item.nameCode = row[nameCodeColumnIndex];
+                                }
+
                                 // Hozzáadás a beszkennelt listához
                                 scannedItems.push({...item});
                             }
+                        }
+
+                        // Active állapot visszaállítása (minden itemre, nemcsak a scannedre)
+                        if (activeColumnIndex !== -1 && row[activeColumnIndex]) {
+                            const activeValue = row[activeColumnIndex].toString().toLowerCase();
+                            item.active = (activeValue === 'yes' || activeValue === 'igen' || activeValue === '1' || activeValue === 'true');
                         }
 
                         equipmentData.push(item);
@@ -667,16 +895,18 @@
         // Központi kód feldolgozás
         function processScannedCode(scannedCode, source) {
             // Keresés az equipment listában
-            const foundItem = equipmentData.find(item => 
+            const foundItem = equipmentData.find(item =>
                 item.acsgId.toUpperCase() === scannedCode.toUpperCase()
             );
-            
+
             if (foundItem) {
                 if (!foundItem.scanned) {
                     foundItem.scanned = true;
                     foundItem.scannedAt = new Date().toLocaleString('hu-HU');
                     foundItem.source = source;
-                    
+                    foundItem.nameCode = userNameCode;
+                    foundItem.active = true; // Default to active
+
                     // Hozzáadás a beszkennelt listához
                     if (!scannedItems.find(item => item.acsgId.toUpperCase() === scannedCode.toUpperCase())) {
                         scannedItems.push({...foundItem});
@@ -704,12 +934,22 @@
             scannedItems.forEach((item, index) => {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'scanned-item';
+                const isActive = item.active !== false; // Default to true if not set
                 itemDiv.innerHTML = `
-                    <div>
+                    <div style="flex: 1;">
                         <strong>${item.manufacturer} ${item.model}</strong><br>
                         <small>ACSG ID: ${item.acsgId}</small><br>
                         <small>Forrás: ${item.source || 'Ismeretlen'}</small><br>
                         <small>Időpont: ${item.scannedAt}</small>
+                        <div class="toggle-container">
+                            <span class="toggle-label ${isActive ? 'active' : 'inactive'}" id="toggleLabel${index}">
+                                ${isActive ? 'Aktív' : 'Inaktív'}
+                            </span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" ${isActive ? 'checked' : ''} onchange="toggleActiveState(${index})" id="toggle${index}">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
                     </div>
                     <button onclick="removeScannedItem(${index})" class="btn secondary" style="padding: 5px 10px; font-size: 0.8em;">❌</button>
                 `;
@@ -718,6 +958,29 @@
 
             scannedList.innerHTML = '';
             scannedList.appendChild(container);
+        }
+
+        // Aktív/Inaktív állapot váltása
+        function toggleActiveState(index) {
+            if (index >= 0 && index < scannedItems.length) {
+                const item = scannedItems[index];
+                item.active = !item.active;
+
+                // Frissítés a fő equipment listában is
+                const equipmentItem = equipmentData.find(eq => eq.acsgId === item.acsgId);
+                if (equipmentItem) {
+                    equipmentItem.active = item.active;
+                }
+
+                // Label frissítése
+                const label = document.getElementById(`toggleLabel${index}`);
+                if (label) {
+                    label.textContent = item.active ? 'Aktív' : 'Inaktív';
+                    label.className = `toggle-label ${item.active ? 'active' : 'inactive'}`;
+                }
+
+                showStatus(scanStatus, `${item.manufacturer} ${item.model} állapota: ${item.active ? 'Aktív' : 'Inaktív'}`, 'info');
+            }
         }
 
         function removeScannedItem(index) {
@@ -751,9 +1014,9 @@
                 
                 // Adatok előkészítése
                 const wsData = [
-                    ['Manufacturer', 'Model', 'Description', 'ACSG ID (ABAS ID)', 'Scanned', 'Scanned At', 'Source']
+                    ['Manufacturer', 'Model', 'Description', 'ACSG ID (ABAS ID)', 'Scanned', 'Scanned At', 'Source', 'Name Code', 'Active']
                 ];
-                
+
                 equipmentData.forEach(item => {
                     wsData.push([
                         item.manufacturer,
@@ -762,7 +1025,9 @@
                         item.acsgId,
                         item.scanned ? 'Yes' : 'No',
                         item.scannedAt || '',
-                        item.source || ''
+                        item.source || '',
+                        item.nameCode || '',
+                        item.active !== false ? 'Yes' : 'No' // Default to Yes if not explicitly set to false
                     ]);
                 });
 
@@ -828,10 +1093,15 @@
 
         // Oldal betöltéskor
         document.addEventListener('DOMContentLoaded', function() {
+            // Névkód bekérése modal megjelenítése
+            showNameCodeModal();
+
             showStatus(scanStatus, 'Válassz egy módszert a QR kódok beolvasásához! 📱💻📷', 'info');
 
-            // Fókusz a manuális beviteli mezőre
-            manualInput.focus();
+            // Fókusz a manuális beviteli mezőre (csak ha nincs aktív modal)
+            if (nameCodeModal.style.display === 'none') {
+                manualInput.focus();
+            }
 
             // HTTPS figyelmeztetés megjelenítése ha szükséges
             if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
