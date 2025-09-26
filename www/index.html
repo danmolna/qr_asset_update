@@ -1027,7 +1027,7 @@
                         item.scannedAt || '',
                         item.source || '',
                         item.nameCode || '',
-                        item.active !== false ? 'Yes' : 'No' // Default to Yes if not explicitly set to false
+                        item.scanned ? (item.active !== false ? 'Yes' : 'No') : '' // Only show active state for scanned items
                     ]);
                 });
 
