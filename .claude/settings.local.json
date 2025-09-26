@@ -3,7 +3,20 @@
     "allow": [
       "Bash(git init:*)",
       "Bash(git remote add:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git branch:*)",
+      "Bash(npm install)",
+      "Bash(npm start)",
+      "Bash(npm run build:*)",
+      "Bash(npm run pack:*)",
+      "Bash(npm run build:mac:*)",
+      "Bash(npm run build:linux:*)",
+      "Bash(npm install:*)",
+      "Bash(npx cap init:*)",
+      "Bash(npx cap add:*)",
+      "Bash(./gradlew:*)"
     ],
     "deny": [],
     "ask": []

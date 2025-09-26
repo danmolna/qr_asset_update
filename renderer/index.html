@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Géplista QR">
+    <link rel="manifest" href="data:application/json;charset=utf-8;base64,ewogICJuYW1lIjogIkfDqXBsaXN0YSBRSDI7IEbcmlzc610xdMSRIiwKICAic2hvcnRfbmFtZSI6ICJHw6lwbGlzdGEgUVIiLAogICJkZXNjcmlwdGlvbiI6ICJRUiBrw7NkIG9sdmFzw6Fzc2FsIGfDqXBsaXN0YSBmcmlzc8OtdMOpcyIsCiAgInN0YXJ0X3VybCI6ICIuLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgInRoZW1lX2NvbG9yIjogIiMyYzNlNTAiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmZmZmZmYiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWw7Y2hhcnNldD11dGYtOCwlM0Nzdmcgd2lkdGg9JzE5MicgaGVpZ2h0PScxOTInIHZpZXdCb3g9JzAgMCAxOTIgMTkyJyBmaWxsPSdub25lJyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnJTNFJTNDcmVjdCB3aWR0aD0nMTkyJyBoZWlnaHQ9JzE5MicgZmlsbD0nJTIzMmMzZTUwJy8lM0UlM0N0ZXh0IHg9Jzk2JyB5PSc5NicgZm9udC1zaXplPSc4MCcgZmlsbD0nJTIzZmZmJyB0ZXh0LWFuY2hvcj0nbWlkZGxlJyBkb21pbmFudC1iYXNlbGluZT0nY2VudHJhbCclM0UlRjAlOUYlOTQlQTclM0MvdGV4dCUzRSUzQy9zdmclM0UiLAogICAgICAic2l6ZXMiOiAiMTkyeDE5MiIsCiAgICAgICJ0eXBlIjogImltYWdlL3N2Zyt4bWwiCiAgICB9CiAgXQp9">
+    <title>Géplista QR Kód Frissítő</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+        
+        .panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .panel:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+        
+        .panel h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .file-upload {
+            margin-bottom: 25px;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        
+        .file-input-wrapper:hover {
+            background: linear-gradient(45deg, #2980b9, #3498db);
+            transform: scale(1.05);
+        }
+        
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+        
+        #video {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 15px;
+            border: 3px solid #3498db;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4);
+        }
+        
+        .btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn.secondary {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+        }
+        
+        .btn.secondary:hover {
+            box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
+        }
+        
+        .equipment-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .equipment-table th,
+        .equipment-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .equipment-table th {
+            background: linear-gradient(45deg, #34495e, #2c3e50);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .equipment-table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        
+        .equipment-table tr:hover {
+            background-color: #e8f4fd;
+            transform: scale(1.02);
+            transition: all 0.3s ease;
+        }
+        
+        .status {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .status.success {
+            background: linear-gradient(45deg, #d4edda, #c3e6cb);
+            color: #155724;
+            border: 2px solid #28a745;
+        }
+        
+        .status.error {
+            background: linear-gradient(45deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+        
+        .status.info {
+            background: linear-gradient(45deg, #cce7ff, #b3d9ff);
+            color: #004085;
+            border: 2px solid #007bff;
+        }
+        
+        .scanned-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 10px;
+            background: white;
+        }
+        
+        .scanned-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .scan-section {
+            border: 2px dashed #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            background: rgba(52, 152, 219, 0.05);
+        }
+        
+        .scan-section h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 1.2em;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="globalStatus" class="status" style="display: none; margin: 20px; border-radius: 10px;"></div>
+        <div class="header">
+            <h1>🔧 Géplista QR Kód Frissítő</h1>
+            <p>Szkennelj QR kódokat és frissítsd a géplistát egyszerűen</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="panel">
+                <h2>📁 Géplista Betöltése</h2>
+                <div class="file-upload">
+                    <label for="fileInput" class="file-input-wrapper">
+                        📂 Excel Fájl Kiválasztása
+                        <input type="file" id="fileInput" accept=".xlsx,.xls" />
+                    </label>
+                    <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                        💡 <strong>Tipp:</strong> Betölthetsz eredeti géplistát vagy korábban letöltött fájlt is - 
+                        automatikusan visszaállítja a beszkennelt elemeket!
+                    </div>
+                </div>
+                
+                <div id="fileStatus" class="status info" style="display: none;">
+                    Fájl betöltve sikeresen!
+                </div>
+                
+                <h3>📊 Aktuális Géplista</h3>
+                <div id="equipmentContainer" style="max-height: 300px; overflow-y: auto;">
+                    <p>Tölts be egy Excel fájlt a lista megtekintéséhez</p>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>📱 QR Kód Beolvasás</h2>
+                
+                <!-- Kamera szkenner -->
+                <div class="scan-section">
+                    <h3>📷 Kamerás Szkenner (HTTPS szükséges)</h3>
+                    <div class="controls">
+                        <button id="startScan" class="btn">📷 Szkenner Indítása</button>
+                        <button id="stopScan" class="btn secondary" disabled>⏹️ Szkenner Leállítása</button>
+                    </div>
+                    <video id="video" style="display: none;"></video>
+                </div>
+
+                <!-- Manuális bevitel -->
+                <div class="scan-section" style="margin-top: 25px;">
+                    <h3>✏️ Manuális ACSG ID Bevitel</h3>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <input type="text" id="manualInput" placeholder="Írj be ACSG ID-t (pl: AU2219)" 
+                               style="flex: 1; min-width: 200px; padding: 12px; border: 2px solid #3498db; border-radius: 25px; font-size: 1em;">
+                        <button id="addManual" class="btn">➕ Hozzáadás</button>
+                    </div>
+                </div>
+
+                <!-- Kép feltöltéses QR olvasás -->
+                <div class="scan-section" style="margin-top: 25px;">
+                    <h3>🖼️ QR Kép Feltöltése</h3>
+                    <label for="qrImageInput" class="file-input-wrapper" style="display: inline-block; margin: 0;">
+                        📸 QR Kép Kiválasztása
+                        <input type="file" id="qrImageInput" accept="image/*" />
+                    </label>
+                    <div id="imagePreview" style="margin-top: 15px; display: none;">
+                        <img id="previewImg" style="max-width: 200px; border-radius: 10px; border: 2px solid #3498db;">
+                    </div>
+                </div>
+                
+                <div id="scanStatus" class="status info" style="display: none;">
+                    Válassz egy módszert a QR kódok beolvasásához
+                </div>
+                
+                <h3>✅ Beszkennelt Elemek</h3>
+                <div id="scannedList" class="scanned-list">
+                    <p style="text-align: center; color: #666; font-style: italic;">
+                        Még nem szkenneltél be egyetlen elemet sem
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+            <div class="panel" style="margin: 30px; margin-top: 0;">
+            <h2>💾 Frissített Lista Letöltése</h2>
+            <p style="margin-bottom: 15px; color: #666;">
+                A letöltött fájl tartalmazza az összes beszkennelt információt. 
+                Később visszatöltve folytathatod ugyanott, ahol abbahagytad! 🔄
+            </p>
+            <div class="controls">
+                <button id="downloadExcel" class="btn">⬇️ Excel Letöltése</button>
+                <button id="clearScanned" class="btn secondary">🗑️ Beszkennelt Lista Törlése</button>
+            </div>
+            <div id="downloadStatus" class="status info" style="display: none;">
+                Kattints a "Excel Letöltése" gombra a frissített fájl letöltéséhez
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let equipmentData = [];
+        let scannedItems = [];
+        let qrScanner = null;
+        let isScanning = false;
+
+        // DOM elemek
+        const fileInput = document.getElementById('fileInput');
+        const startScanBtn = document.getElementById('startScan');
+        const stopScanBtn = document.getElementById('stopScan');
+        const video = document.getElementById('video');
+        const manualInput = document.getElementById('manualInput');
+        const addManualBtn = document.getElementById('addManual');
+        const qrImageInput = document.getElementById('qrImageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const equipmentContainer = document.getElementById('equipmentContainer');
+        const scannedList = document.getElementById('scannedList');
+        const downloadExcelBtn = document.getElementById('downloadExcel');
+        const clearScannedBtn = document.getElementById('clearScanned');
+
+        // Státusz elemek
+        const globalStatus = document.getElementById('globalStatus');
+        const fileStatus = document.getElementById('fileStatus');
+        const scanStatus = document.getElementById('scanStatus');
+        const downloadStatus = document.getElementById('downloadStatus');
+
+        // Event listener-ek
+        fileInput.addEventListener('change', handleFileLoad);
+        startScanBtn.addEventListener('click', startScanning);
+        stopScanBtn.addEventListener('click', stopScanning);
+        addManualBtn.addEventListener('click', addManualCode);
+        manualInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addManualCode();
+            }
+        });
+        qrImageInput.addEventListener('change', handleImageUpload);
+        downloadExcelBtn.addEventListener('click', downloadExcel);
+        clearScannedBtn.addEventListener('click', clearScanned);
+
+        function handleFileLoad(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    // Fejléc elemzése - ellenőrizzük hogy ez egy korábban exportált fájl-e
+                    const headers = jsonData[0];
+                    const hasScannedColumn = headers.some(header => 
+                        header && header.toString().toLowerCase().includes('scanned')
+                    );
+                    const hasScannedAtColumn = headers.some(header => 
+                        header && (header.toString().toLowerCase().includes('scanned at') || 
+                                  header.toString().toLowerCase().includes('scanned_at'))
+                    );
+                    const hasSourceColumn = headers.some(header => 
+                        header && header.toString().toLowerCase().includes('source')
+                    );
+
+                    let scannedColumnIndex = -1;
+                    let scannedAtColumnIndex = -1;
+                    let sourceColumnIndex = -1;
+
+                    if (hasScannedColumn) {
+                        scannedColumnIndex = headers.findIndex(header => 
+                            header && header.toString().toLowerCase().includes('scanned') && 
+                            !header.toString().toLowerCase().includes('at')
+                        );
+                    }
+
+                    if (hasScannedAtColumn) {
+                        scannedAtColumnIndex = headers.findIndex(header => 
+                            header && (header.toString().toLowerCase().includes('scanned at') || 
+                                      header.toString().toLowerCase().includes('scanned_at'))
+                        );
+                    }
+
+                    if (hasSourceColumn) {
+                        sourceColumnIndex = headers.findIndex(header => 
+                            header && header.toString().toLowerCase().includes('source')
+                        );
+                    }
+
+                    // Adatok feldolgozása
+                    equipmentData = [];
+                    scannedItems = []; // Beszkennelt lista törlése
+                    
+                    let restoredCount = 0;
+
+                    jsonData.slice(1).forEach((row, index) => {
+                        const item = {
+                            id: index + 1,
+                            manufacturer: row[0] || '',
+                            model: row[1] || '',
+                            description: row[2] || '',
+                            acsgId: row[3] || '',
+                            scanned: false,
+                            scannedAt: null,
+                            source: null
+                        };
+
+                        // Ha van Scanned oszlop, akkor visszaállítjuk az állapotot
+                        if (scannedColumnIndex !== -1 && row[scannedColumnIndex]) {
+                            const scannedValue = row[scannedColumnIndex].toString().toLowerCase();
+                            if (scannedValue === 'yes' || scannedValue === 'igen' || scannedValue === '1' || scannedValue === 'true') {
+                                item.scanned = true;
+                                restoredCount++;
+                                
+                                // Scanned At visszaállítása
+                                if (scannedAtColumnIndex !== -1 && row[scannedAtColumnIndex]) {
+                                    item.scannedAt = row[scannedAtColumnIndex];
+                                }
+                                
+                                // Source visszaállítása
+                                if (sourceColumnIndex !== -1 && row[sourceColumnIndex]) {
+                                    item.source = row[sourceColumnIndex];
+                                } else {
+                                    item.source = 'Korábban rögzítve';
+                                }
+
+                                // Hozzáadás a beszkennelt listához
+                                scannedItems.push({...item});
+                            }
+                        }
+
+                        equipmentData.push(item);
+                    });
+
+                    displayEquipmentList();
+                    displayScannedList();
+
+                    // Fókusz visszaállítása a manuális beviteli mezőre
+                    setTimeout(() => {
+                        manualInput.focus();
+                    }, 100);
+
+                    let statusMessage = `${equipmentData.length} gép betöltve sikeresen!`;
+                    if (restoredCount > 0) {
+                        statusMessage += ` 🔄 ${restoredCount} korábban beszkennelt elem visszaállítva!`;
+                        showStatus(fileStatus, statusMessage, 'success');
+                        showStatus(scanStatus, `✅ Folytathatod a munkát! ${restoredCount} elem már be volt szkennelve.`, 'success');
+                    } else {
+                        showStatus(fileStatus, statusMessage, 'success');
+                    }
+                    
+                } catch (error) {
+                    showGlobalError('Hiba a fájl betöltésekor: ' + error.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function displayEquipmentList() {
+            if (equipmentData.length === 0) {
+                equipmentContainer.innerHTML = '<p>Nincs betöltött adat</p>';
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'equipment-table';
+            
+            // Fejléc
+            const headerRow = document.createElement('tr');
+            ['Gyártó', 'Modell', 'Leírás', 'ACSG ID', 'Státusz'].forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            table.appendChild(headerRow);
+
+            // Adatok
+            equipmentData.forEach(item => {
+                const row = document.createElement('tr');
+                
+                [item.manufacturer, item.model, item.description, item.acsgId].forEach(cellData => {
+                    const td = document.createElement('td');
+                    td.textContent = cellData;
+                    row.appendChild(td);
+                });
+
+                const statusTd = document.createElement('td');
+                if (item.scanned) {
+                    statusTd.innerHTML = `<span style="color: green; font-weight: bold;">✅ Beszkennelve</span>
+                                        <br><small style="color: #666;">${item.scannedAt || 'Ismeretlen időpont'}</small>`;
+                } else {
+                    statusTd.innerHTML = '<span style="color: #999;">⏳ Várakozik</span>';
+                }
+                row.appendChild(statusTd);
+
+                if (item.scanned) {
+                    row.style.backgroundColor = '#d4edda';
+                }
+
+                table.appendChild(row);
+            });
+
+            equipmentContainer.innerHTML = '';
+            equipmentContainer.appendChild(table);
+        }
+
+        // QR szkenner funkciók
+        startScanBtn.addEventListener('click', startScanning);
+        stopScanBtn.addEventListener('click', stopScanning);
+
+        async function startScanning() {
+            try {
+                // HTTPS ellenőrzés
+                if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                    showGlobalError('⚠️ HTTPS szükséges a kamera használatához! Használd a manuális bevitelt vagy kép feltöltést.');
+                    return;
+                }
+
+                if (!QrScanner.hasCamera()) {
+                    showGlobalError('Nincs elérhető kamera! Használd a manuális bevitelt.');
+                    return;
+                }
+
+                video.style.display = 'block';
+                qrScanner = new QrScanner(video, handleQrResult, {
+                    highlightScanRegion: true,
+                    highlightCodeOutline: true,
+                });
+
+                await qrScanner.start();
+                isScanning = true;
+                startScanBtn.disabled = true;
+                stopScanBtn.disabled = false;
+                showStatus(scanStatus, 'Szkenner aktív - irányítsd a kamerát egy QR kódra', 'info');
+
+            } catch (error) {
+                showGlobalError('Hiba a szkenner indításakor: ' + error.message + '. Használd a manuális bevitelt!');
+            }
+        }
+
+        function stopScanning() {
+            if (qrScanner) {
+                qrScanner.stop();
+                qrScanner = null;
+            }
+            video.style.display = 'none';
+            isScanning = false;
+            startScanBtn.disabled = false;
+            stopScanBtn.disabled = true;
+            showStatus(scanStatus, 'Szkenner leállítva', 'success');
+        }
+
+        function handleQrResult(result) {
+            const scannedCode = result.data;
+            processScannedCode(scannedCode, 'Kamerás szkenner');
+        }
+
+        // Manuális kód hozzáadása
+        function addManualCode() {
+            const code = manualInput.value.trim().toUpperCase().replace(/Ö/g, '0');
+            if (!code) {
+                showStatus(scanStatus, 'Kérlek írj be egy ACSG ID-t!', 'error');
+                manualInput.focus(); // Fókusz visszaadása
+                return;
+            }
+
+            processScannedCode(code, 'Manuális bevitel');
+            manualInput.value = '';
+            manualInput.focus(); // Fókusz visszaadása a következő beolvasáshoz
+        }
+
+        // Kép feltöltés és QR olvasás
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Kép előnézet
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                imagePreview.style.display = 'block';
+                
+                // QR kód olvasás a képből
+                QrScanner.scanImage(file, { returnDetailedScanResult: true })
+                    .then(result => {
+                        processScannedCode(result.data, 'Kép feltöltés');
+                        showStatus(scanStatus, `✅ QR kód sikeresen beolvasva a képből!`, 'success');
+                    })
+                    .catch(error => {
+                        showStatus(scanStatus, '❌ Nem sikerült QR kódot találni a képben. Próbáld a manuális bevitelt!', 'error');
+                        console.log('QR olvasási hiba:', error);
+                    });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Központi kód feldolgozás
+        function processScannedCode(scannedCode, source) {
+            // Keresés az equipment listában
+            const foundItem = equipmentData.find(item => 
+                item.acsgId.toUpperCase() === scannedCode.toUpperCase()
+            );
+            
+            if (foundItem) {
+                if (!foundItem.scanned) {
+                    foundItem.scanned = true;
+                    foundItem.scannedAt = new Date().toLocaleString('hu-HU');
+                    foundItem.source = source;
+                    
+                    // Hozzáadás a beszkennelt listához
+                    if (!scannedItems.find(item => item.acsgId.toUpperCase() === scannedCode.toUpperCase())) {
+                        scannedItems.push({...foundItem});
+                        displayScannedList();
+                        displayEquipmentList(); // Lista frissítése
+                        showStatus(scanStatus, `✅ Sikeres szkennelés (${source}): ${foundItem.manufacturer} ${foundItem.model}`, 'success');
+                    } else {
+                        showStatus(scanStatus, `⚠️ Ez az elem már be volt szkennelve: ${foundItem.manufacturer} ${foundItem.model}`, 'info');
+                    }
+                } else {
+                    showStatus(scanStatus, `⚠️ Ez az elem már be volt szkennelve korábban`, 'info');
+                }
+            } else {
+                showStatus(scanStatus, `❌ Ismeretlen ACSG ID: ${scannedCode}. Ellenőrizd a kódot!`, 'error');
+            }
+        }
+
+        function displayScannedList() {
+            if (scannedItems.length === 0) {
+                scannedList.innerHTML = '<p style="text-align: center; color: #666; font-style: italic;">Még nem szkenneltél be egyetlen elemet sem</p>';
+                return;
+            }
+
+            const container = document.createElement('div');
+            scannedItems.forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'scanned-item';
+                itemDiv.innerHTML = `
+                    <div>
+                        <strong>${item.manufacturer} ${item.model}</strong><br>
+                        <small>ACSG ID: ${item.acsgId}</small><br>
+                        <small>Forrás: ${item.source || 'Ismeretlen'}</small><br>
+                        <small>Időpont: ${item.scannedAt}</small>
+                    </div>
+                    <button onclick="removeScannedItem(${index})" class="btn secondary" style="padding: 5px 10px; font-size: 0.8em;">❌</button>
+                `;
+                container.appendChild(itemDiv);
+            });
+
+            scannedList.innerHTML = '';
+            scannedList.appendChild(container);
+        }
+
+        function removeScannedItem(index) {
+            const item = scannedItems[index];
+            
+            // Jelölés visszavonása az eredeti listában
+            const originalItem = equipmentData.find(eq => eq.acsgId === item.acsgId);
+            if (originalItem) {
+                originalItem.scanned = false;
+                originalItem.scannedAt = null;
+            }
+            
+            scannedItems.splice(index, 1);
+            displayScannedList();
+            displayEquipmentList();
+        }
+
+        // Letöltés és törlés event listener-ek
+        downloadExcelBtn.addEventListener('click', downloadExcel);
+        clearScannedBtn.addEventListener('click', clearScanned);
+
+        function downloadExcel() {
+            if (equipmentData.length === 0) {
+                showStatus(downloadStatus, 'Nincs adat a letöltéshez!', 'error');
+                return;
+            }
+
+            try {
+                // Új munkafüzet létrehozása
+                const wb = XLSX.utils.book_new();
+                
+                // Adatok előkészítése
+                const wsData = [
+                    ['Manufacturer', 'Model', 'Description', 'ACSG ID (ABAS ID)', 'Scanned', 'Scanned At', 'Source']
+                ];
+                
+                equipmentData.forEach(item => {
+                    wsData.push([
+                        item.manufacturer,
+                        item.model,
+                        item.description,
+                        item.acsgId,
+                        item.scanned ? 'Yes' : 'No',
+                        item.scannedAt || '',
+                        item.source || ''
+                    ]);
+                });
+
+                // Munkalap létrehozása
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                XLSX.utils.book_append_sheet(wb, ws, 'upkeep-assets');
+
+                // Fájl letöltése
+                const fileName = `Géplista_frissítve_${new Date().toISOString().slice(0,10)}.xlsx`;
+                XLSX.writeFile(wb, fileName);
+                
+                showStatus(downloadStatus, `Excel fájl letöltve: ${fileName}`, 'success');
+                
+            } catch (error) {
+                showGlobalError('Hiba a letöltés során: ' + error.message);
+            }
+        }
+
+        function clearScanned() {
+            if (confirm('Biztosan törölni szeretnéd az összes beszkennelt elemet? Ez a művelet nem vonható vissza.')) {
+                scannedItems = [];
+                equipmentData.forEach(item => {
+                    item.scanned = false;
+                    item.scannedAt = null;
+                    item.source = null;
+                });
+                displayScannedList();
+                displayEquipmentList();
+                showStatus(downloadStatus, 'Beszkennelt lista törölve', 'success');
+            }
+        }
+
+        function showStatus(element, message, type, isGlobal = false) {
+            // Ha globális státusz, akkor a tetejére helyezzük
+            const targetElement = isGlobal ? globalStatus : element;
+
+            targetElement.textContent = message;
+            targetElement.className = `status ${type}`;
+            targetElement.style.display = 'block';
+
+            // Globális üzenetnél görgessünk fel
+            if (isGlobal) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            setTimeout(() => {
+                targetElement.style.display = 'none';
+            }, 5000);
+        }
+
+        // Globális hibaüzenet megjelenítés
+        function showGlobalError(message) {
+            showStatus(null, message, 'error', true);
+        }
+
+        function showGlobalSuccess(message) {
+            showStatus(null, message, 'success', true);
+        }
+
+        function showGlobalInfo(message) {
+            showStatus(null, message, 'info', true);
+        }
+
+        // Oldal betöltéskor
+        document.addEventListener('DOMContentLoaded', function() {
+            showStatus(scanStatus, 'Válassz egy módszert a QR kódok beolvasásához! 📱💻📷', 'info');
+
+            // Fókusz a manuális beviteli mezőre
+            manualInput.focus();
+
+            // HTTPS figyelmeztetés megjelenítése ha szükséges
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                setTimeout(() => {
+                    showStatus(scanStatus, '💡 Tipp: HTTPS-en a kamerás szkenner is használható!', 'info');
+                }, 3000);
+            }
+
+            // PWA telepítés támogatása
+            let deferredPrompt;
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                
+                // Telepítés gomb megjelenítése
+                const installBtn = document.createElement('button');
+                installBtn.className = 'btn';
+                installBtn.innerHTML = '📱 Telepítés Android App-ként';
+                installBtn.style.position = 'fixed';
+                installBtn.style.bottom = '20px';
+                installBtn.style.right = '20px';
+                installBtn.style.zIndex = '1000';
+                installBtn.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
+                
+                installBtn.onclick = async () => {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        console.log('PWA telepítve');
+                    }
+                    deferredPrompt = null;
+                    installBtn.remove();
+                };
+                
+                document.body.appendChild(installBtn);
+            });
+        });
+    </script>
+</body>
+</html>

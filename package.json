@@ -1,0 +1,54 @@
+{
+  "name": "qr-asset-scanner",
+  "version": "1.0.0",
+  "description": "QR kód alapú géplista szkennelő alkalmazás",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win --config.nsis.oneClick=false",
+    "pack": "electron-builder --dir",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "dist": "npm run build"
+  },
+  "keywords": [
+    "qr",
+    "scanner",
+    "asset",
+    "inventory",
+    "electron"
+  ],
+  "author": "danmolna",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.danmolna.qr-asset-scanner",
+    "productName": "QR Asset Scanner",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable",
+      "sign": null
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "tar.gz"
+    }
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3"
+  }
+}
