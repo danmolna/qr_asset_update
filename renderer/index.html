@@ -548,6 +548,44 @@
         </div>
     </div>
 
+    <!-- New Device Modal -->
+    <div id="newDeviceModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h2>➕ Új eszköz hozzáadása</h2>
+            <p style="margin-bottom: 15px; color: #666;">Töltsd ki az új eszköz adatait:</p>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">ACSG ID:</label>
+                <input type="text" id="newDeviceId" class="modal-input" readonly style="background-color: #f0f0f0;">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Gyártó / Név:</label>
+                <input type="text" id="newDeviceManufacturer" class="modal-input" placeholder="pl: Siemens" required>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Leírás:</label>
+                <input type="text" id="newDeviceDescription" class="modal-input" placeholder="pl: CNC megmunkáló központ">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Modell:</label>
+                <input type="text" id="newDeviceModel" class="modal-input" placeholder="pl: DMU 50">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Sorozatszám:</label>
+                <input type="text" id="newDeviceSerial" class="modal-input" placeholder="pl: SN123456789">
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="cancelNewDevice" class="modal-btn" style="background-color: #6c757d;">❌ Mégse</button>
+                <button id="addNewDevice" class="modal-btn">✅ Hozzáad</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <div id="globalStatus" class="status" style="display: none; margin: 20px; border-radius: 10px;"></div>
         <div class="header">
@@ -812,9 +850,10 @@
                         const item = {
                             id: index + 1,
                             manufacturer: row[0] || '',
-                            model: row[1] || '',
-                            description: row[2] || '',
-                            acsgId: row[3] || '',
+                            description: row[1] || '',
+                            model: row[2] || '',
+                            serialNumber: row[3] || '',
+                            acsgId: row[4] || '',
                             scanned: false,
                             scannedAt: null,
                             source: null,
@@ -1052,7 +1091,12 @@
                     showStatus(scanStatus, `⚠️ Ez az elem már be volt szkennelve korábban`, 'info');
                 }
             } else {
-                showStatus(scanStatus, `❌ Ismeretlen ACSG ID: ${scannedCode}. Ellenőrizd a kódot!`, 'error');
+                // Ismeretlen ID esetén felhasználó választása
+                if (confirm(`❓ Ismeretlen ACSG ID: ${scannedCode}\n\nSzeretnéd felvenni új eszközként?`)) {
+                    showNewDeviceModal(scannedCode);
+                } else {
+                    showStatus(scanStatus, `❌ Ismeretlen ACSG ID: ${scannedCode}. Ellenőrizd a kódot!`, 'error');
+                }
             }
         }
 
@@ -1070,7 +1114,9 @@
                 itemDiv.innerHTML = `
                     <div style="flex: 1;">
                         <strong>${item.manufacturer} ${item.model}</strong><br>
+                        ${item.description ? `<small>Leírás: ${item.description}</small><br>` : ''}
                         <small>ACSG ID: ${item.acsgId}</small><br>
+                        ${item.serialNumber ? `<small>Sorozatszám: ${item.serialNumber}</small><br>` : ''}
                         <small>Forrás: ${item.source || 'Ismeretlen'}</small><br>
                         <small>Időpont: ${item.scannedAt}</small>
                         <div class="toggle-container">
@@ -1243,14 +1289,15 @@
                 
                 // Adatok előkészítése
                 const wsData = [
-                    ['Manufacturer', 'Model', 'Description', 'ACSG ID (ABAS ID)', 'Scanned', 'Scanned At', 'Source', 'Name Code', 'Active']
+                    ['Manufacturer', 'Description', 'Model', 'Serial Number', 'ACSG ID (ABAS ID)', 'Scanned', 'Scanned At', 'Source', 'Name Code', 'Active']
                 ];
 
                 equipmentData.forEach(item => {
                     wsData.push([
                         item.manufacturer,
-                        item.model,
                         item.description,
+                        item.model,
+                        item.serialNumber || '',
                         item.acsgId,
                         item.scanned ? 'Yes' : 'No',
                         item.scannedAt || '',
@@ -1366,6 +1413,113 @@
                 };
                 
                 document.body.appendChild(installBtn);
+            });
+        });
+
+        // New Device Modal functionality
+        const newDeviceModal = document.getElementById('newDeviceModal');
+        const newDeviceIdInput = document.getElementById('newDeviceId');
+        const newDeviceManufacturerInput = document.getElementById('newDeviceManufacturer');
+        const newDeviceDescriptionInput = document.getElementById('newDeviceDescription');
+        const newDeviceModelInput = document.getElementById('newDeviceModel');
+        const newDeviceSerialInput = document.getElementById('newDeviceSerial');
+        const cancelNewDeviceBtn = document.getElementById('cancelNewDevice');
+        const addNewDeviceBtn = document.getElementById('addNewDevice');
+
+        function showNewDeviceModal(scannedCode) {
+            newDeviceIdInput.value = scannedCode;
+            newDeviceManufacturerInput.value = '';
+            newDeviceDescriptionInput.value = '';
+            newDeviceModelInput.value = '';
+            newDeviceSerialInput.value = '';
+            newDeviceModal.style.display = 'flex';
+            setTimeout(() => {
+                newDeviceManufacturerInput.focus();
+            }, 100);
+        }
+
+        function closeNewDeviceModal() {
+            newDeviceModal.style.display = 'none';
+        }
+
+        function addNewDevice() {
+            const manufacturer = newDeviceManufacturerInput.value.trim();
+            const description = newDeviceDescriptionInput.value.trim();
+            const model = newDeviceModelInput.value.trim();
+            const serialNumber = newDeviceSerialInput.value.trim();
+            const acsgId = newDeviceIdInput.value.trim();
+
+            if (!manufacturer) {
+                alert('A gyártó/név mező kitöltése kötelező!');
+                newDeviceManufacturerInput.focus();
+                return;
+            }
+
+            if (!acsgId) {
+                alert('ACSG ID hiányzik!');
+                return;
+            }
+
+            // Check if ACSG ID already exists
+            const existingItem = equipmentData.find(item =>
+                item.acsgId.toUpperCase() === acsgId.toUpperCase()
+            );
+
+            if (existingItem) {
+                alert('Ez az ACSG ID már létezik a listában!');
+                return;
+            }
+
+            // Create new device item
+            const newItem = {
+                id: equipmentData.length + 1,
+                manufacturer: manufacturer,
+                description: description,
+                model: model,
+                serialNumber: serialNumber,
+                acsgId: acsgId,
+                scanned: true, // Automatically mark as scanned
+                scannedAt: new Date().toLocaleString('hu-HU'),
+                source: 'Új eszköz hozzáadása',
+                nameCode: userNameCode,
+                active: true,
+                hasPhoto: false
+            };
+
+            // Add to equipment data
+            equipmentData.push(newItem);
+
+            // Add to scanned items
+            scannedItems.push({...newItem});
+
+            // Update displays
+            displayEquipmentList();
+            displayScannedList();
+
+            // Close modal
+            closeNewDeviceModal();
+
+            // Show success message
+            showStatus(scanStatus, `✅ Új eszköz hozzáadva és beszkennelve: ${manufacturer} ${model}`, 'success');
+        }
+
+        // Event listeners for new device modal
+        cancelNewDeviceBtn.addEventListener('click', closeNewDeviceModal);
+        addNewDeviceBtn.addEventListener('click', addNewDevice);
+
+        // Close modal when clicking outside
+        newDeviceModal.addEventListener('click', function(e) {
+            if (e.target === newDeviceModal) {
+                closeNewDeviceModal();
+            }
+        });
+
+        // Handle Enter key in form fields
+        [newDeviceManufacturerInput, newDeviceDescriptionInput, newDeviceModelInput, newDeviceSerialInput].forEach(input => {
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addNewDevice();
+                }
             });
         });
     </script>
