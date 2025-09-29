@@ -674,6 +674,7 @@
             <div class="controls">
                 <button id="downloadExcel" class="btn">⬇️ Excel Letöltése</button>
                 <button id="clearScanned" class="btn secondary">🗑️ Beszkennelt Lista Törlése</button>
+                <button id="clearStorage" class="btn secondary">💾❌ Összes Mentett Adat Törlése</button>
             </div>
             <div id="downloadStatus" class="status info" style="display: none;">
                 Kattints a "Excel Letöltése" gombra a frissített fájl letöltéséhez
@@ -687,6 +688,71 @@
         let qrScanner = null;
         let isScanning = false;
         let userNameCode = '';
+
+        // LocalStorage kulcsok
+        const STORAGE_KEYS = {
+            equipmentData: 'qr_scanner_equipmentData',
+            scannedItems: 'qr_scanner_scannedItems',
+            nameCode: 'qr_scanner_nameCode'
+        };
+
+        // LocalStorage függvények
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.equipmentData, JSON.stringify(equipmentData));
+                localStorage.setItem(STORAGE_KEYS.scannedItems, JSON.stringify(scannedItems));
+                localStorage.setItem(STORAGE_KEYS.nameCode, userNameCode);
+                console.log('Adatok mentve a helyi tárolóba');
+            } catch (error) {
+                console.error('Hiba az adatok mentésekor:', error);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                // Névkód visszaállítása
+                const savedNameCode = localStorage.getItem(STORAGE_KEYS.nameCode);
+                if (savedNameCode) {
+                    userNameCode = savedNameCode;
+                    nameCodeInput.value = userNameCode;
+                }
+
+                // Equipment data visszaállítása
+                const savedEquipmentData = localStorage.getItem(STORAGE_KEYS.equipmentData);
+                if (savedEquipmentData) {
+                    equipmentData = JSON.parse(savedEquipmentData);
+                    displayEquipmentList();
+                }
+
+                // Scanned items visszaállítása
+                const savedScannedItems = localStorage.getItem(STORAGE_KEYS.scannedItems);
+                if (savedScannedItems) {
+                    scannedItems = JSON.parse(savedScannedItems);
+                    displayScannedList();
+                }
+
+                console.log('Adatok visszaállítva a helyi tárolóból');
+                return {
+                    hasEquipmentData: !!savedEquipmentData,
+                    hasScannedItems: !!savedScannedItems,
+                    hasNameCode: !!savedNameCode
+                };
+            } catch (error) {
+                console.error('Hiba az adatok visszaállításakor:', error);
+                return { hasEquipmentData: false, hasScannedItems: false, hasNameCode: false };
+            }
+        }
+
+        function clearLocalStorage() {
+            try {
+                localStorage.removeItem(STORAGE_KEYS.equipmentData);
+                localStorage.removeItem(STORAGE_KEYS.scannedItems);
+                localStorage.removeItem(STORAGE_KEYS.nameCode);
+                console.log('Helyi tárolás törölve');
+            } catch (error) {
+                console.error('Hiba a helyi tárolás törlésekor:', error);
+            }
+        }
 
         // DOM elemek
         const fileInput = document.getElementById('fileInput');
@@ -702,6 +768,7 @@
         const scannedList = document.getElementById('scannedList');
         const downloadExcelBtn = document.getElementById('downloadExcel');
         const clearScannedBtn = document.getElementById('clearScanned');
+        const clearStorageBtn = document.getElementById('clearStorage');
 
         // Modal elemek
         const nameCodeModal = document.getElementById('nameCodeModal');
@@ -760,6 +827,7 @@
             const code = nameCodeInput.value.trim().toUpperCase();
             if (code.length >= 2) {
                 userNameCode = code;
+                localStorage.setItem('qr_scanner_nameCode', userNameCode);
                 nameCodeModal.style.display = 'none';
                 showGlobalInfo(`📝 Névkód beállítva: ${userNameCode}`);
             }
@@ -902,6 +970,9 @@
 
                     displayEquipmentList();
                     displayScannedList();
+
+                    // Adatok mentése localStorage-ba
+                    saveToLocalStorage();
 
                     // Fókusz visszaállítása a manuális beviteli mezőre
                     setTimeout(() => {
@@ -1083,6 +1154,7 @@
                         scannedItems.push({...foundItem});
                         displayScannedList();
                         displayEquipmentList(); // Lista frissítése
+                        saveToLocalStorage(); // Adatok mentése
                         showStatus(scanStatus, `✅ Sikeres szkennelés (${source}): ${foundItem.manufacturer} ${foundItem.model}`, 'success');
                     } else {
                         showStatus(scanStatus, `⚠️ Ez az elem már be volt szkennelve: ${foundItem.manufacturer} ${foundItem.model}`, 'info');
@@ -1255,6 +1327,7 @@
                 }
 
                 showStatus(scanStatus, `${item.manufacturer} ${item.model} állapota: ${item.active ? 'Aktív' : 'Inaktív'}`, 'info');
+                saveToLocalStorage(); // Adatok mentése
             }
         }
 
@@ -1271,11 +1344,13 @@
             scannedItems.splice(index, 1);
             displayScannedList();
             displayEquipmentList();
+            saveToLocalStorage(); // Adatok mentése
         }
 
         // Letöltés és törlés event listener-ek
         downloadExcelBtn.addEventListener('click', downloadExcel);
         clearScannedBtn.addEventListener('click', clearScanned);
+        clearStorageBtn.addEventListener('click', clearStorageAndReload);
 
         function downloadExcel() {
             if (equipmentData.length === 0) {
@@ -1332,7 +1407,18 @@
                 });
                 displayScannedList();
                 displayEquipmentList();
+                saveToLocalStorage(); // Adatok mentése
                 showStatus(downloadStatus, 'Beszkennelt lista törölve', 'success');
+            }
+        }
+
+        function clearStorageAndReload() {
+            if (confirm('🗑️ FIGYELEM! Ez törli az összes mentett adatot (névkód, gépek, szkennelt elemek).\n\nBiztosan folytatod? Az oldal újra fog töltődni.')) {
+                clearLocalStorage();
+                showGlobalInfo('🔄 Összes mentett adat törölve. Oldal újratöltése...');
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
             }
         }
 
@@ -1369,8 +1455,19 @@
 
         // Oldal betöltéskor
         document.addEventListener('DOMContentLoaded', function() {
-            // Névkód bekérése modal megjelenítése
-            showNameCodeModal();
+            // Adatok visszaállítása localStorage-ból
+            const restored = loadFromLocalStorage();
+
+            // Névkód bekérése modal megjelenítése (ha nincs mentett névkód)
+            if (!restored.hasNameCode) {
+                showNameCodeModal();
+            } else {
+                // Ha van mentett névkód, akkor ne jelenjen meg a modal
+                nameCodeModal.style.display = 'none';
+                if (restored.hasEquipmentData) {
+                    showGlobalInfo(`📱 Korábbi adatok visszaállítva! Névkód: ${userNameCode}, Gépek: ${equipmentData.length}, Szkennelt: ${scannedItems.length}`);
+                }
+            }
 
             showStatus(scanStatus, 'Válassz egy módszert a QR kódok beolvasásához! 📱💻📷', 'info');
 
@@ -1495,6 +1592,9 @@
             // Update displays
             displayEquipmentList();
             displayScannedList();
+
+            // Adatok mentése localStorage-ba
+            saveToLocalStorage();
 
             // Close modal
             closeNewDeviceModal();
