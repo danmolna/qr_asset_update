@@ -416,6 +416,110 @@
         .toggle-label.inactive {
             color: #e74c3c;
         }
+
+        /* Photo Capture Styles */
+        .photo-btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .photo-btn:hover {
+            background: linear-gradient(45deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .photo-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Photo capture modal */
+        .photo-modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            backdrop-filter: blur(5px);
+        }
+
+        .photo-modal-content {
+            background-color: white;
+            margin: 2% auto;
+            padding: 20px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            position: relative;
+        }
+
+        .photo-modal video {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 10px;
+            border: 3px solid #3498db;
+        }
+
+        .photo-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .capture-btn {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .capture-btn:hover {
+            background: linear-gradient(45deg, #c0392b, #e74c3c);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .close-photo-btn {
+            background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .close-photo-btn:hover {
+            background: linear-gradient(45deg, #7f8c8d, #95a5a6);
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -427,6 +531,20 @@
             <input type="text" id="nameCodeInput" class="modal-input" placeholder="Írd be a névkódod (pl: DJ01)" maxlength="10" autocomplete="off">
             <br>
             <button id="confirmNameCode" class="modal-btn" disabled>✅ Folytatás</button>
+        </div>
+    </div>
+
+    <!-- Photo capture modal -->
+    <div id="photoModal" class="photo-modal">
+        <div class="photo-modal-content">
+            <h2>📸 Fotó készítése</h2>
+            <p id="photoItemName" style="margin-bottom: 15px; font-weight: bold; color: #2c3e50;"></p>
+            <video id="photoVideo" autoplay playsinline></video>
+            <canvas id="photoCanvas" style="display: none;"></canvas>
+            <div class="photo-controls">
+                <button id="capturePhotoBtn" class="capture-btn">📷 Fotó készítése</button>
+                <button id="closePhotoBtn" class="close-photo-btn">❌ Bezárás</button>
+            </div>
         </div>
     </div>
 
@@ -552,6 +670,14 @@
         const nameCodeInput = document.getElementById('nameCodeInput');
         const confirmNameCodeBtn = document.getElementById('confirmNameCode');
 
+        // Photo capture elemek
+        const photoModal = document.getElementById('photoModal');
+        const photoVideo = document.getElementById('photoVideo');
+        const photoCanvas = document.getElementById('photoCanvas');
+        const capturePhotoBtn = document.getElementById('capturePhotoBtn');
+        const closePhotoBtn = document.getElementById('closePhotoBtn');
+        const photoItemName = document.getElementById('photoItemName');
+
         // Státusz elemek
         const globalStatus = document.getElementById('globalStatus');
         const fileStatus = document.getElementById('fileStatus');
@@ -580,6 +706,10 @@
             }
         });
         confirmNameCodeBtn.addEventListener('click', confirmNameCode);
+
+        // Photo capture event listener-ek
+        capturePhotoBtn.addEventListener('click', capturePhoto);
+        closePhotoBtn.addEventListener('click', closePhotoModal);
 
         // Névkód modal kezelő függvények
         function validateNameCode() {
@@ -689,7 +819,8 @@
                             scannedAt: null,
                             source: null,
                             nameCode: null,
-                            active: true // Default to active
+                            active: true, // Default to active
+                            hasPhoto: false // Default no photo
                         };
 
                         // Ha van Scanned oszlop, akkor visszaállítjuk az állapotot
@@ -906,6 +1037,7 @@
                     foundItem.source = source;
                     foundItem.nameCode = userNameCode;
                     foundItem.active = true; // Default to active
+                    foundItem.hasPhoto = false; // Default no photo
 
                     // Hozzáadás a beszkennelt listához
                     if (!scannedItems.find(item => item.acsgId.toUpperCase() === scannedCode.toUpperCase())) {
@@ -951,13 +1083,110 @@
                             </label>
                         </div>
                     </div>
-                    <button onclick="removeScannedItem(${index})" class="btn secondary" style="padding: 5px 10px; font-size: 0.8em;">❌</button>
+                    <div style="display: flex; flex-direction: column; gap: 5px; align-items: center;">
+                        <button onclick="takePhoto(${index})" class="photo-btn" title="Fotó készítése">
+                            📸 ${item.hasPhoto ? '✅' : 'Fotó'}
+                        </button>
+                        <button onclick="removeScannedItem(${index})" class="btn secondary" style="padding: 5px 10px; font-size: 0.8em;">❌</button>
+                    </div>
                 `;
                 container.appendChild(itemDiv);
             });
 
             scannedList.innerHTML = '';
             scannedList.appendChild(container);
+        }
+
+        // Photo capture változók
+        let currentPhotoItemIndex = -1;
+        let photoStream = null;
+
+        // Fotó készítése egy elemről
+        function takePhoto(index) {
+            if (index >= 0 && index < scannedItems.length) {
+                currentPhotoItemIndex = index;
+                const item = scannedItems[index];
+                photoItemName.textContent = `${item.manufacturer} ${item.model} (${item.acsgId})`;
+                showPhotoModal();
+            }
+        }
+
+        // Photo modal megjelenítése és kamera indítása
+        async function showPhotoModal() {
+            photoModal.style.display = 'block';
+
+            try {
+                // Kamera stream indítása
+                photoStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'environment' // Hátsó kamera előnyben részesítése
+                    }
+                });
+                photoVideo.srcObject = photoStream;
+                capturePhotoBtn.disabled = false;
+            } catch (error) {
+                console.error('Kamera hozzáférési hiba:', error);
+                showStatus(scanStatus, 'Kamera hozzáférési hiba! Ellenőrizd az engedélyeket.', 'error');
+                closePhotoModal();
+            }
+        }
+
+        // Photo modal bezárása
+        function closePhotoModal() {
+            photoModal.style.display = 'none';
+
+            // Kamera stream leállítása
+            if (photoStream) {
+                photoStream.getTracks().forEach(track => track.stop());
+                photoStream = null;
+            }
+
+            photoVideo.srcObject = null;
+            capturePhotoBtn.disabled = true;
+            currentPhotoItemIndex = -1;
+        }
+
+        // Fotó készítése és letöltése
+        function capturePhoto() {
+            if (currentPhotoItemIndex < 0 || !photoStream) return;
+
+            const item = scannedItems[currentPhotoItemIndex];
+
+            // Canvas beállítása a videó méretéhez
+            const context = photoCanvas.getContext('2d');
+            photoCanvas.width = photoVideo.videoWidth;
+            photoCanvas.height = photoVideo.videoHeight;
+
+            // Videó frame rögzítése canvas-ra
+            context.drawImage(photoVideo, 0, 0);
+
+            // Canvas konvertálása blob-ba
+            photoCanvas.toBlob(function(blob) {
+                // Letöltés indítása
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${item.acsgId}.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                // Fotó státusz frissítése
+                item.hasPhoto = true;
+                const equipmentItem = equipmentData.find(eq => eq.acsgId === item.acsgId);
+                if (equipmentItem) {
+                    equipmentItem.hasPhoto = true;
+                }
+
+                // Lista frissítése hogy megjelenjen a fotó indikátor
+                displayScannedList();
+
+                showStatus(scanStatus, `📸 Fotó készítve és letöltve: ${item.acsgId}.jpg`, 'success');
+                closePhotoModal();
+            }, 'image/jpeg', 0.8);
         }
 
         // Aktív/Inaktív állapot váltása
